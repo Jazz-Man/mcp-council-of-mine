@@ -1,0 +1,23 @@
+{
+  "name": "mcp-council-of-mine",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@effect/language-service": "^0.72.0",
+    "@tsconfig/bun": "^1.0.10",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@effect/ai": "^0.33.2",
+    "@effect/platform": "^0.94.2",
+    "@effect/platform-bun": "^0.87.1",
+    "effect": "^3.19.15"
+  },
+  "trustedDependencies": [
+    "@parcel/watcher"
+  ]
+}
