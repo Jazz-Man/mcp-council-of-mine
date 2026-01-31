@@ -1,0 +1,3 @@
+# serena code-analysis lsp typescript
+Для перегляду TypeScript файлів використовувати serena MCP utilities замість shell commands. Це забезпечує кращий LSP-based аналіз коду.
+
