@@ -1,8 +1,8 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "app base tsconfig",
-  "extends": "@tsconfig/bun",
-  "compilerOptions": {
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"display": "app base tsconfig",
+	"extends": "@tsconfig/bun",
+	"compilerOptions": {
 		"preserveSymlinks": true,
 
 		"downlevelIteration": true,
@@ -17,12 +17,40 @@
 		"plugins": [
 			{
 				"name": "@effect/language-service",
-				"diagnostics": true,
-				"quickinfo": true,
-				"completions": true,
-				"multipleEffectCheck": true
+				"refactors": true, // controls Effect refactors (default: true)
+				"diagnostics": true, // controls Effect diagnostics (default: true)
+				"diagnosticSeverity": {
+					"floatingeffect": "warning"
+				},
+				"diagnosticsName": true, // controls whether to include the rule name in diagnostic messages (default: true)
+				"missingDiagnosticNextLine": "warning", // controls the severity of warnings for unused @effect-diagnostics-next-line comments (default: "warning", allowed values: off,error,warning,message,suggestion)
+				"includeSuggestionsInTsc": true, // when enabled with effect-language-service patch enabled, diagnostics with "suggestion" severity will be reported as "message" in TSC with "[suggestion]" prefix; useful to help steer LLM output (default: true)
+				"ignoreEffectWarningsInTscExitCode": false, // if set to true, effect-related warnings won't change the exit code of tsc, meaning that tsc will compile fine even if effect warnings are emitted (default: false)
+				"ignoreEffectSuggestionsInTscExitCode": true, // if set to true, effect-related suggestions won't change the exit code of tsc (default: true)
+				"quickinfo": true, // controls Effect quickinfo (default: true)
+				"quickinfoEffectParameters": "whenTruncated", // (default: "whenTruncated") controls when to display effect type parameters always,never,whenTruncated
+				"quickinfoMaximumLength": -1, // controls how long can be the types in the quickinfo hover (helps with very long type to improve perfs, defaults to -1 for no truncation, can be any number eg. 1000 and TS will try to fit as much as possible in that budget, higher number means more info.)
+				"completions": true, // controls Effect completions (default: true)
+				"goto": true, // controls Effect goto references (default: true)
+				"inlays": true, // controls Effect provided inlayHints (default: true)
+				"allowedDuplicatedPackages": [], // list of package names that have effect in peer dependencies and are allowed to be duplicated (default: [])
+				"barrelImportPackages": [], // package names that should be preferred as imported from the top level barrel file (default: [])
+				"namespaceImportPackages": [], // package names that should be preferred as imported with namespace imports e.g. ["effect", "@effect/*"] (default: [])
+				"topLevelNamedReexports": "ignore", // for namespaceImportPackages, how should top level named re-exports (e.g. {pipe} from "effect") be treated? "ignore" will leave them as is, "follow" will rewrite them to the re-exported module (e.g. {pipe} from "effect/Function")
+				"importAliases": { "Array": "Arr" }, // allows to chose some different names for import name aliases (only when not chosing to import the whole module) (default: {})
+				"noExternal": false, // disables features that provides links to external websites (such as links to mermaidchart.com) (default: false)
+				"keyPatterns": [
+					{
+						"target": "service",
+						"pattern": "default",
+						"skipLeadingPath": ["src/"]
+					}
+				], // configure the key patterns; recommended reading more on the section "Configuring Key Patterns"
+				"effectFn": ["span"], // what types of Effect.fn you want to get suggested, zero or multiple between "untraced" for fnUntraced, "span" for Effect.fn with span, "inferred-span" for Effect.fn with the inferred span name, "no-span" for Effect.fn with no span (default: ["span"])
+				"layerGraphFollowDepth": 0, // controls the depth level that the layer graph will follow when resolving layer dependencies, depth is counted only when exiting the currently hovered/analyzed layer definition (default: 0)
+				"mermaidProvider": "mermaid.live" // which provider to use for mermaid, can also be a uri like http://localhost:8080 if running mermaid-live-editor locally.
 			}
 		]
 	},
-  "exclude": ["node_modules"]
+	"exclude": ["node_modules"]
 }
