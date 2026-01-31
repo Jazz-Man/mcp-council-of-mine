@@ -156,7 +156,6 @@ export const RATE_LIMITS = {
 	TOTAL_LIMIT: 1000,
 } as const;
 
-
 /**
  * Check rate limits before starting a new debate
  *
@@ -164,38 +163,39 @@ export const RATE_LIMITS = {
  * - Max 50 debates per hour
  * - Max 1000 total debates
  */
-export const checkRateLimits = Effect.fn("checkRateLimits", function* () {
-	const repository = yield* DebateRepository;
+export const checkRateLimits = () =>
+	Effect.gen(function* () {
+		const repository = yield* DebateRepository;
 
-	// Check hourly limit
-	const hourlyCount = yield* repository.countInLastHour();
-	if (hourlyCount >= RATE_LIMITS.HOURLY_LIMIT) {
-		return yield* new ValidationError({
-			message: `Rate limit exceeded: ${hourlyCount}/50 debates in the last hour`,
-			field: "hourly",
-			validation_type: "rate_limit_hourly",
-		});
-	}
+		// Check hourly limit
+		const hourlyCount = yield* repository.countInLastHour();
+		if (hourlyCount >= RATE_LIMITS.HOURLY_LIMIT) {
+			return yield* new ValidationError({
+				message: `Rate limit exceeded: ${hourlyCount}/50 debates in the last hour`,
+				field: "hourly",
+				validation_type: "rate_limit_hourly",
+			});
+		}
 
-	// Check total limit
-	const totalCount = yield* repository.listAll();
-	const total = totalCount.length;
-	if (total >= RATE_LIMITS.TOTAL_LIMIT) {
-		return yield* new ValidationError({
-			message: `Rate limit exceeded: ${total}/1000 total debates`,
-			field: "total",
-			validation_type: "rate_limit_total",
-		});
-	}
+		// Check total limit
+		const totalCount = yield* repository.listAll();
+		const total = totalCount.length;
+		if (total >= RATE_LIMITS.TOTAL_LIMIT) {
+			return yield* new ValidationError({
+				message: `Rate limit exceeded: ${total}/1000 total debates`,
+				field: "total",
+				validation_type: "rate_limit_total",
+			});
+		}
 
-	// Return current limits status
-	return {
-		hourlyUsed: hourlyCount,
-		hourlyRemaining: RATE_LIMITS.HOURLY_LIMIT - hourlyCount,
-		totalUsed: total,
-		totalRemaining: RATE_LIMITS.TOTAL_LIMIT - total,
-	};
-});
+		// Return current limits status
+		return {
+			hourlyUsed: hourlyCount,
+			hourlyRemaining: RATE_LIMITS.HOURLY_LIMIT - hourlyCount,
+			totalUsed: total,
+			totalRemaining: RATE_LIMITS.TOTAL_LIMIT - total,
+		};
+	});
 
 /**
  * Build a safe prompt for council members by sanitizing the user prompt
