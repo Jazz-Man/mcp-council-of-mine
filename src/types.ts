@@ -1,6 +1,3 @@
-import * as Effect from "effect";
-import * as S from "effect/Schema";
-
 /**
  * Type-level utilities and helpers for Council of Mine
  */

@@ -1,4 +1,3 @@
-import * as Schema from "effect";
 import * as S from "effect/Schema";
 
 /**
