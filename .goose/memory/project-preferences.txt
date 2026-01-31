@@ -1,0 +1,19 @@
+# #formatting #biome #workflow #typescript
+# Project-Specific: Biome Formatting Rule
+
+## Rule:
+**ALWAYS run `biome check --write src/` after making changes to TypeScript files in this project.**
+
+## When to run:
+- After editing/creating .ts files
+- Before committing changes
+- After batch edits
+
+## Commands:
+- `biome check --write src/` - Full check + format + fix
+- `biome format --write src/` - Format only
+- `biome lint --write src/` - Lint + fix only
+
+## Why:
+Project uses Biome for code formatting and linting. Must be run after every TypeScript file change to maintain consistent code style.
+
