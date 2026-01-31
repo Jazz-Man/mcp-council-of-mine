@@ -71,9 +71,9 @@ export const DebateSummarySchema = S.Struct({
 	opinion_count: S.Number,
 	vote_count: S.Number,
 	status: S.Union(
-		S.Literal("in_progress"),
-		S.Literal("voting_complete"),
-		S.Literal("results_ready"),
+		S.Literal("collecting_opinions"),
+		S.Literal("voting"),
+		S.Literal("completed"),
 	),
 });
 
