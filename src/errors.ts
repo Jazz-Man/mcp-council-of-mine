@@ -43,6 +43,11 @@ export class ValidationError extends S.TaggedError<ValidationError>(
 			S.Literal("invalid_debate_id"),
 			S.Literal("empty_prompt"),
 			S.Literal("sanitization_failed"),
+			S.Literal("debate_id_length"),
+			S.Literal("debate_id_format"),
+			S.Literal("prompt_length"),
+			S.Literal("rate_limit_hourly"),
+			S.Literal("rate_limit_total"),
 		),
 	),
 }) {}

@@ -5,9 +5,8 @@
  */
 
 import { Effect } from "effect";
-
-import { ValidationError } from "./errors.js";
-import { DebateRepository } from "./db/repository.js";
+import { ValidationError } from "./errors";
+import { DebateRepository } from "./db/repository";
 
 
 /**
@@ -26,7 +25,6 @@ export const validateDebateId = (debateId: string) =>
 			return yield* new ValidationError({
 				message: `Debate ID too long: ${debateId.length} characters (max 64)`,
 				validation_type: "debate_id_length",
-				value: debateId,
 			});
 		}
 
@@ -37,7 +35,6 @@ export const validateDebateId = (debateId: string) =>
 				return yield* new ValidationError({
 					message: `Invalid debate ID: contains path traversal pattern`,
 					validation_type: "path_traversal",
-					value: debateId,
 				});
 			}
 		}
@@ -48,7 +45,6 @@ export const validateDebateId = (debateId: string) =>
 			return yield* new ValidationError({
 				message: `Invalid debate ID format: ${debateId}`,
 				validation_type: "debate_id_format",
-				value: debateId,
 			});
 		}
 
@@ -70,7 +66,6 @@ export const validatePrompt = (prompt: string) =>
 			return yield* new ValidationError({
 				message: "Prompt cannot be empty",
 				validation_type: "empty_prompt",
-				value: prompt,
 			});
 		}
 
@@ -78,7 +73,6 @@ export const validatePrompt = (prompt: string) =>
 			return yield* new ValidationError({
 				message: `Prompt too long: ${prompt.length} characters (max 5000)`,
 				validation_type: "prompt_length",
-				value: prompt,
 			});
 		}
 
@@ -104,7 +98,6 @@ export const validatePrompt = (prompt: string) =>
 			return yield* new ValidationError({
 				message: `Prompt injection detected: ${detectedInjections.join(", ")}`,
 				validation_type: "prompt_injection",
-				value: prompt,
 			});
 		}
 
@@ -180,8 +173,8 @@ export const checkRateLimits = Effect.fn("checkRateLimits", () =>
 		if (hourlyCount >= RATE_LIMITS.HOURLY_LIMIT) {
 			return yield* new ValidationError({
 				message: `Rate limit exceeded: ${hourlyCount}/50 debates in the last hour`,
+				field: "hourly",
 				validation_type: "rate_limit_hourly",
-				value: hourlyCount,
 			});
 		}
 
@@ -191,8 +184,8 @@ export const checkRateLimits = Effect.fn("checkRateLimits", () =>
 		if (total >= RATE_LIMITS.TOTAL_LIMIT) {
 			return yield* new ValidationError({
 				message: `Rate limit exceeded: ${total}/1000 total debates`,
+				field: "total",
 				validation_type: "rate_limit_total",
-				value: total,
 			});
 		}
 
