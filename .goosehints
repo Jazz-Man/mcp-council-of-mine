@@ -1,0 +1,305 @@
+# Effect/AI + MCP Server Development Guide
+
+## Project Context
+
+This project uses:
+- **@effect/ai** - AI integration package with Tool, Toolkit, and MCP Server support
+- **@effect/platform-bun** - Bun runtime for Effect applications
+- **@effect/language-service** - Development tools with diagnostics, refactors, and completions
+
+## Core Code Style Guidelines
+
+### 1. Use Effect.gen for All Asynchronous Code
+
+```typescript
+// CORRECT
+const program = Effect.gen(function* () {
+  const result = yield* someEffect
+  return result
+})
+
+// WRONG - never use async/await
+const program = async () => {
+  const result = await something()
+  return result
+}
+```
+
+### 2. Schema-Driven Design
+
+All tools must use Schema for parameters, success, and failure:
+
+```typescript
+const MyTool = Tool.make("MyTool", {
+  description: "Tool description",
+  parameters: {
+    input: Schema.String,
+    count: Schema.Number
+  },
+  success: Schema.Struct({
+    result: Schema.String,
+    timestamp: Schema.Number
+  }),
+  failure: MyErrorSchema
+})
+```
+
+### 3. Use Tagged Errors
+
+Never use generic Error - always use TaggedError:
+
+```typescript
+class MyError extends Schema.TaggedError<MyError>()("MyError", {
+  message: Schema.String,
+  code: Schema.Literal("ERR_1", "ERR_2")
+}) {}
+
+// In Effect.gen
+yield* new MyError({ message: "Something went wrong", code: "ERR_1" })
+```
+
+### 4. Namespace Imports
+
+Use namespace imports for all Effect packages:
+
+```typescript
+import * as Effect from "effect"
+import * as Schema from "effect"
+import * as Context from "effect/Context"
+import * as Layer from "effect/Layer"
+import * as Tool from "@effect/ai"
+import * as McpServer from "@effect/ai/McpServer"
+```
+
+### 5. Layer-Based Dependency Injection
+
+All dependencies should be provided through Layers:
+
+```typescript
+const MyServiceLive = Layer.effect(
+  MyService,
+  Effect.gen(function* () {
+    return MyService.of({
+      method: (input) => Effect.succeed(`processed: ${input}`)
+    })
+  })
+)
+
+const MainLive = MyServiceLive.pipe(
+  Layer.provide(DependencyLive)
+)
+```
+
+### 6. Use Effect.fn for Functions
+
+For functions returning Effect, use Effect.fn for better tracing:
+
+```typescript
+const myFunction = Effect.fn("myFunction", function* (param: string) {
+  const result = yield* process(param)
+  return result
+})
+```
+
+## MCP Server Pattern
+
+### Tool Definition
+
+```typescript
+import * as Effect from "effect"
+import * as Schema from "effect"
+import { Tool, Toolkit, McpServer } from "@effect/ai"
+
+// Define tools
+const Tool1 = Tool.make("Tool1", {
+  description: "First tool",
+  success: Schema.Void
+})
+
+const Tool2 = Tool.make("Tool2", {
+  parameters: { input: Schema.String },
+  success: Schema.Struct({ output: Schema.String })
+})
+```
+
+### Toolkit and Handlers
+
+```typescript
+// Create toolkit
+const MyToolkit = Toolkit.make(Tool1, Tool2)
+
+// Create layer with handlers
+const ToolkitLive = MyToolkit.toLayer({
+  Tool1: () => Effect.succeed(void 0),
+  Tool2: ({ input }) => Effect.succeed({ output: `processed: ${input}` })
+})
+```
+
+### Server Setup
+
+```typescript
+const McpServerLive = McpServer.make({
+  toolkit: ToolkitLive
+})
+
+const Main = McpServerLive.pipe(
+  Layer.provide(ToolkitLive)
+)
+
+Effect.runFork(Main)
+```
+
+## Language Service Usage
+
+### Apply TypeScript Patch
+
+Run once to enable build-time diagnostics:
+
+```bash
+effect-language-service patch
+```
+
+Add to package.json:
+
+```json
+{
+  "scripts": {
+    "prepare": "effect-language-service patch"
+  }
+}
+```
+
+### Useful Commands
+
+```bash
+# View Effect exports overview
+effect-language-service overview --project tsconfig.json
+
+# Get layer composition info
+effect-language-service layerinfo --file src/index.ts --name MyLive
+
+# Generate code from directives
+effect-language-service codegen --project tsconfig.json
+```
+
+### Codegen Directives
+
+Add to files for automatic code generation:
+
+```typescript
+// @effect-codegens annotate - Add type annotations to exports
+// @effect-codegens accessors - Implement service accessors
+// @effect-codegens typeToSchema - Generate Schema classes from types
+```
+
+## Common Anti-Patterns
+
+### NEVER Use Async/Await
+
+```typescript
+// WRONG
+const getData = async () => {
+  const response = await fetch(url)
+  return response.json()
+}
+
+// CORRECT
+const getData = Effect.gen(function* () {
+  const response = yield* fetchEffect(url)
+  return yield* Effect.promise(() => response.json())
+})
+```
+
+### NEVER Use Generic Error
+
+```typescript
+// WRONG
+throw new Error("Something failed")
+
+// CORRECT
+yield* new MySpecificError({ message: "Something failed", details: "..." })
+```
+
+### NEVER Create Floating Effects
+
+```typescript
+// WRONG - floating effect
+const program = Effect.gen(function* () {
+  Effect.succeed(1) // This effect is not yielded or run
+})
+
+// CORRECT
+const program = Effect.gen(function* () {
+  const value = yield* Effect.succeed(1)
+  return value
+})
+```
+
+## Quick Reference
+
+### Import Patterns
+
+```typescript
+// Core Effect
+import * as Effect from "effect"
+import * as Schema from "effect"
+import * as Layer from "effect/Layer"
+import * as Context from "effect/Context"
+import * as Match from "effect/Match"
+
+// AI
+import * as Tool from "@effect/ai/Tool"
+import * as Toolkit from "@effect/ai/Toolkit"
+import * as McpServer from "@effect/ai/McpServer"
+import * as LanguageModel from "@effect/ai/LanguageModel"
+```
+
+### Effect.gen Pattern
+
+```typescript
+const program = Effect.gen(function* () {
+  // Get dependencies
+  const service = yield* MyService
+  
+  // Execute effects
+  const result1 = yield* service.method(input)
+  const result2 = yield* anotherEffect
+  
+  // Return
+  return { result1, result2 }
+})
+```
+
+### Error Handling
+
+```typescript
+const program = Effect.gen(function* () {
+  const result = yield* Effect.catchTag(
+    someEffect,
+    "MyError",
+    (error) => Effect.succeed(`fallback: ${error.message}`)
+  )
+  return result
+})
+
+// Or with Match
+const result = yield* Match.type(error).pipe(
+  Match.tag("ErrorType1", (e) => handle1(e)),
+  Match.tag("ErrorType2", (e) => handle2(e)),
+  Match.orElse((e) => handleDefault(e))
+)
+```
+
+## Project-Specific Notes
+
+- Runtime: Bun via `@effect/platform-bun`
+- All tools must define explicit schemas
+- Use `Effect.fn` for functions returning Effect
+- Apply `effect-language-service patch` for build-time diagnostics
+- Namespace imports are preferred
+
+## Related Documentation
+
+- Effect AI: https://github.com/Effect-TS/effect/tree/main/packages/ai
+- Language Service: node_modules/@effect/language-service/README.md
+- MCP Server: src/McpServer.ts in @effect/ai
