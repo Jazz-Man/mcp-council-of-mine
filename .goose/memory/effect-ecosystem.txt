@@ -1,0 +1,81 @@
+# effect ai mcp platform-bun language-service
+# Effect/AI & Platform-Bun Detailed Analysis
+
+## @effect/ai Package Structure
+
+### Core Modules
+- **AiError** - Error hierarchy (HttpRequestError, HttpResponseError, MalformedInput, MalformedOutput, UnknownError)
+- **Chat** - Stateful conversation interface with history
+- **EmbeddingModel** - Vector embeddings with batching and caching
+- **IdGenerator** - Pluggable ID generation for tool calls
+- **LanguageModel** - AI text generation with streaming and tool calling
+- **McpSchema** - Schema definitions for MCP protocol
+- **McpServer** - MCP server implementation
+- **Model** - Unified interface for AI service providers
+- **Prompt** - Conversation structure with messages and content parts
+- **Response** - LLM response structures
+- **Telemetry** - OpenTelemetry integration
+- **Tokenizer** - Tokenization and text truncation
+- **Tool** - Tool definition with schema validation
+- **Toolkit** - Tool collections
+
+### Tool API Pattern
+```typescript
+// Tool definition
+const MyTool = Tool.make("ToolName", {
+  description: "What the tool does",
+  parameters: {
+    param1: Schema.String,
+    param2: Schema.Number
+  },
+  success: Schema.Struct({ result: Schema.String }),
+  failure: Schema.TaggedError("MyError", { message: Schema.String })
+})
+
+// Toolkit creation
+const toolkit = Toolkit.make(MyTool, OtherTool)
+
+// Layer with handlers
+const MyLive = toolkit.toLayer({
+  MyTool: (params) => Effect.succeed({ result: "value" }),
+  OtherTool: (params) => Effect.gen(function* () {
+    // handler implementation
+  })
+})
+```
+
+## @effect/platform-bun
+
+### Purpose
+Bun-specific runtime for Effect applications. Re-exports Node runtime.
+
+### Key Features
+- Uses Node runtime implementation under the hood
+- Layer-based architecture
+- Platform-specific implementations for file system, networking, etc.
+
+## @effect/language-service
+
+### Installation
+Already installed and configured in tsconfig.json with diagnostics, refactors, and completions enabled.
+
+### CLI Commands
+- `effect-language-service patch` - Patch TypeScript for build-time diagnostics
+- `effect-language-service codegen` - Generate code from directives
+- `effect-language-service overview` - Show Effect exports overview
+- `effect-language-service layerinfo` - Get layer composition info
+
+### Codegen Directives
+- `// @effect-codegens annotate` - Add type annotations
+- `// @effect-codegens accessors` - Implement service accessors
+- `// @effect-codegens typeToSchema` - Generate Schema classes from types
+
+## Common Anti-Patterns to Avoid
+
+1. **Using async/await** - Always use Effect.gen
+2. **Generic Error types** - Use TaggedError
+3. **Direct dependencies** - Use Layers
+4. **Skipping schema validation** - Always define parameters/success/failure
+5. **Not handling errors** - Use Effect.catchTag, Match.type
+6. **Floating effects** - Effects must be yielded or run
+
