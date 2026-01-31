@@ -3,6 +3,14 @@
   "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "lsp:patch": "effect-language-service patch",
+    "lsp:setup": "effect-language-service setup",
+    "lsp:codegen": "effect-language-service codegen",
+    "lsp:diagnostics": "effect-language-service diagnostics",
+    "lsp:quickfixes": "effect-language-service quickfixes",
+    "lsp:check": "effect-language-service check"
+  },
   "devDependencies": {
     "@effect/language-service": "^0.72.0",
     "@tsconfig/bun": "^1.0.10",
