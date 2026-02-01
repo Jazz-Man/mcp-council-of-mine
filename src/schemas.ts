@@ -1,3 +1,4 @@
+import type { CreateMessage } from "@effect/ai/McpSchema";
 import * as S from "effect/Schema";
 
 /**
@@ -106,5 +107,7 @@ export const SamplingMessageSchema = S.Struct({
 		S.Array(SamplingMessageContentSchema),
 	),
 });
+
+export type SamplingOptions = S.Schema.Type<typeof CreateMessage.payloadSchema>;
 
 export type SamplingMessage = S.Schema.Type<typeof SamplingMessageSchema>;

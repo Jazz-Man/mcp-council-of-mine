@@ -14,36 +14,9 @@
  * @since 1.0.0
  */
 
-import {
-	CreateMessage,
-	CreateMessageResult,
-	McpError,
-	McpServerClient,
-} from "@effect/ai/McpSchema";
-import * as Effect from "effect";
-
-/**
- * Sampling options for generating a message via MCP protocol
- *
- * @property messages - Array of messages to send to the LLM
- * @property maxTokens - Maximum tokens to generate
- * @property temperature - Optional temperature (0.0 to 1.0)
- * @property systemPrompt - Optional system prompt to override
- * @property includeContext - Whether to include server context ("none" | "thisServer" | "allServers")
- */
-export interface SamplingOptions {
-	readonly messages: ReadonlyArray<{
-		readonly role: "user" | "assistant" | "system";
-		readonly content: {
-			readonly type: "text";
-			readonly text: string;
-		};
-	}>;
-	readonly maxTokens: number;
-	readonly temperature?: number;
-	readonly systemPrompt?: string;
-	readonly includeContext?: "none" | "thisServer" | "allServers";
-}
+import { CreateMessage, McpServerClient } from "@effect/ai/McpSchema";
+import { Cause, Effect, Schema } from "effect";
+import type { SamplingOptions } from "./schemas.ts";
 
 /**
  * Generate a message via MCP protocol sampling
@@ -79,40 +52,29 @@ export interface SamplingOptions {
  * });
  * ```
  */
-export const sampleMessage = (
-	options: SamplingOptions,
-) =>
+export const sampleMessage = (options: SamplingOptions) =>
 	Effect.gen(function* () {
 		// Get the MCP server client from Context
 		const { getClient } = yield* McpServerClient;
 		const client = yield* getClient;
 
 		// Build the request payload according to the CreateMessage schema
-		const request = CreateMessage.payloadSchema.make({
-			messages: options.messages as any,
-			modelPreferences: options.temperature
-				? ({ hints: [{ units: "tokens", value: options.temperature }] } as any)
-				: undefined,
-			systemPrompt: options.systemPrompt,
-			includeContext: options.includeContext ?? "none",
-			maxTokens: options.maxTokens,
-			stopSequences: undefined,
-			metadata: undefined,
-		});
+		const request = CreateMessage.payloadSchema.make(options);
 
 		// Call the `sampling/createMessage` RPC method
 		const result = yield* client["sampling/createMessage"](request).pipe(
-			Effect.mapError(
-				(error) =>
+			Effect.catchAllCause((cause) =>
+				Effect.fail(
 					new SamplingError({
-						message: `MCP sampling failed: ${error.message}`,
-						cause: error,
+						request,
+						cause: Cause.squash(cause),
 					}),
+				),
 			),
 		);
 
 		return result;
-	}).pipe(Effect.scoped);
+	});
 
 /**
  * Error thrown when MCP sampling fails
@@ -123,17 +85,14 @@ export const sampleMessage = (
  * - The client declines the request
  * - Network/transport errors occur
  */
-export class SamplingError extends Effect.Schema.TaggedError<SamplingError>()(
+export class SamplingError extends Schema.TaggedError<SamplingError>()(
 	"@effect/council-of-mine/SamplingError",
 	{
-		/**
-		 * Human-readable error message
-		 */
-		message: Effect.Schema.String,
+		request: CreateMessage.payloadSchema,
 
 		/**
 		 * The underlying cause of the error
 		 */
-		cause: Effect.Schema.Unknown,
+		cause: Schema.optional(Schema.Defect),
 	},
 ) {}
