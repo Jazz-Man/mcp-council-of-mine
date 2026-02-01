@@ -52,6 +52,9 @@ import type { SamplingOptions } from "./schemas.ts";
  * });
  * ```
  */
+
+type Params = Parameters<typeof CreateMessage.payloadSchema.make>;
+
 export const sampleMessage = (options: SamplingOptions) =>
 	Effect.gen(function* () {
 		// Get the MCP server client from Context

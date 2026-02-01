@@ -1,14 +1,13 @@
 /**
  * Council Debate Tool
  *
- * This module provides the `start_council_debate` tool, which initiates a new
- * democratic council debate where all 9 members form opinions on a given topic.
- *
- * @since 1.0.0
+ * Implements the start_council_debate tool that generates opinions
+ * from all 9 council members via MCP sampling.
  */
 
-import * as ToolNamespace from "@effect/ai/Tool";
-import * as Effect from "effect/Effect";
+import * as Tool from "@effect/ai/Tool";
+import * as Toolkit from "@effect/ai/Toolkit";
+import { Effect } from "effect";
 import * as Schema from "effect/Schema";
 import { COUNCIL_MEMBERS, loadSystemPrompt } from "../council/members.ts";
 import { DebateRepository } from "../db/repository.ts";
@@ -19,11 +18,11 @@ import { checkRateLimits, validateAndSanitizePrompt } from "../security.ts";
 import { generateDebateId } from "../types.ts";
 
 /**
- * Tool definition for starting a new council debate
+ * Tool definition for starting a council debate
  */
-export const StartDebate = ToolNamespace.make("start_council_debate", {
+export const StartDebate = Tool.make("start_council_debate", {
 	description:
-		"Start a new council debate where all 9 members form opinions on the given topic.",
+		"Start a new council debate where all 9 members provide opinions",
 	parameters: {
 		prompt: Schema.String,
 	},
@@ -38,7 +37,7 @@ export const StartDebate = ToolNamespace.make("start_council_debate", {
 /**
  * Handler implementation for starting a debate
  */
-export const StartDebateLive = StartDebate.toHandler((prompt: string) =>
+export const startDebateHandler = ({ prompt }: { prompt: string }) =>
 	Effect.gen(function* () {
 		// Step 1: Validate and sanitize prompt
 		const safePrompt = yield* validateAndSanitizePrompt(prompt);
@@ -64,7 +63,7 @@ export const StartDebateLive = StartDebate.toHandler((prompt: string) =>
 			COUNCIL_MEMBERS.map((member) =>
 				Effect.gen(function* () {
 					// Load system prompt
-					const systemPrompt = yield* loadSystemPrompt(member);
+					const systemPrompt = yield* loadSystemPrompt(member.member_id);
 
 					// Build sampling message
 					const result = yield* sampleMessage({
@@ -80,7 +79,8 @@ export const StartDebateLive = StartDebate.toHandler((prompt: string) =>
 						maxTokens: 300,
 						temperature: 0.8,
 						systemPrompt,
-						includeContext: "none" as const,
+						includeContext: "none",
+						metadata: undefined,
 					});
 
 					// Extract text from result
@@ -130,5 +130,15 @@ export const StartDebateLive = StartDebate.toHandler((prompt: string) =>
 			debate_id: debateId,
 			opinion_count: opinions.length,
 		};
-	}),
-);
+	}) as Effect.Effect<
+		{ status: string; debate_id: string; opinion_count: number },
+		ValidationError | InvalidStateError,
+		never
+	>;
+
+/**
+ * Layer for the debate tool handler
+ */
+export const DebateToolsLive = Toolkit.make(StartDebate).toLayer({
+	start_council_debate: startDebateHandler,
+});
