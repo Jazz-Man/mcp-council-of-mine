@@ -83,26 +83,36 @@ export const startDebateHandler = ({ prompt }: { prompt: string }) =>
 						metadata: undefined,
 					});
 
-					// Extract text from result
+					// Extract text from result (content is an array!)
 					const text = yield* Effect.try({
 						try: () => {
-							const content = result.content;
-							if (
-								typeof content === "object" &&
-								content !== null &&
-								"type" in content &&
-								content.type === "text" &&
-								"text" in content
-							) {
-								return content.text;
+							// Content is an array of content blocks
+							const contentArray = result.content;
+
+							if (contentArray.length === 0) {
+								return "";
 							}
+
+							const firstBlock = contentArray[0];
+
+							// Check if it's a text block
+							if (
+								typeof firstBlock === "object" &&
+								firstBlock !== null &&
+								"type" in firstBlock &&
+								firstBlock.type === "text" &&
+								"text" in firstBlock
+							) {
+								return firstBlock.text;
+							}
+
 							return "";
 						},
 						catch: () =>
 							new ValidationError({
 								message: "Failed to extract opinion text",
 								field: "opinion",
-								validation_type: "prompt_length",
+								validation_type: "invalid_response",
 							}),
 					});
 
