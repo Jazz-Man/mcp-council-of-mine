@@ -1,7 +1,7 @@
 import { CreateMessage, McpServerClient } from "@effect/ai/McpSchema";
 import { Cause, Effect } from "effect";
 import * as Schema from "effect/Schema";
-import { CreateMessageResultSchema, type SamplingOptions } from "./schemas.js";
+import { CreateMessageResultSchema, type SamplingOptions } from "./schemas.ts";
 
 /**
  * Error thrown when MCP sampling fails
@@ -63,9 +63,7 @@ export class SamplingError extends Schema.TaggedError<SamplingError>()(
  * });
  * ```
  */
-export const sampleMessage = (
-	options: SamplingOptions,
-) =>
+export const sampleMessage = (options: SamplingOptions) =>
 	Effect.gen(function* () {
 		// Get the MCP server client from Context
 		const { getClient } = yield* McpServerClient;
@@ -94,9 +92,7 @@ export const sampleMessage = (
 		return result;
 	});
 
-export const sampleMessageFn = (
-	options: SamplingOptions,
-) =>
+export const sampleMessageFn = (options: SamplingOptions) =>
 	Effect.fnUntraced(function* () {
 		// Get the MCP server client from Context
 		const { getClient } = yield* McpServerClient;

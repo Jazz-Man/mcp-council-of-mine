@@ -48,6 +48,7 @@ export class ValidationError extends S.TaggedError<ValidationError>(
 			S.Literal("prompt_length"),
 			S.Literal("rate_limit_hourly"),
 			S.Literal("rate_limit_total"),
+			S.Literal("invalid_response"),
 		),
 	),
 }) {}
