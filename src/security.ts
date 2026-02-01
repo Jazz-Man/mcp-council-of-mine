@@ -4,7 +4,7 @@
  * Based on Python security features from mcp-council-of-mine
  */
 
-import { Effect, Option } from "effect";
+import { Effect } from "effect";
 import { DebateRepository } from "./db/repository.ts";
 import { ValidationError } from "./errors.ts";
 

@@ -76,6 +76,30 @@ export const sampleMessage = (options: SamplingOptions) =>
 		return result;
 	});
 
+export const sampleMessageFn = (options: SamplingOptions) =>
+	Effect.fnUntraced(function* () {
+		// Get the MCP server client from Context
+		const { getClient } = yield* McpServerClient;
+		const client = yield* getClient;
+
+		// Build the request payload according to the CreateMessage schema
+		const request = CreateMessage.payloadSchema.make(options);
+
+		// Call the `sampling/createMessage` RPC method
+		const result = yield* client["sampling/createMessage"](request).pipe(
+			Effect.catchAllCause((cause) =>
+				Effect.fail(
+					new SamplingError({
+						request,
+						cause: Cause.squash(cause),
+					}),
+				),
+			),
+		);
+
+		return result;
+	}, Effect.scoped);
+
 /**
  * Error thrown when MCP sampling fails
  *
