@@ -1,6 +1,58 @@
 import type { CreateMessage } from "@effect/ai/McpSchema";
 import * as S from "effect/Schema";
 
+// ==============================================================================
+// CUSTOM MCP SAMPLING SCHEMAS (Full MCP Spec Compliance)
+// ==============================================================================
+
+/**
+ * Text content block for sampling responses
+ */
+export const TextContentSchema = S.Struct({
+	type: S.Literal("text"),
+	text: S.String,
+});
+
+/**
+ * Image content block for sampling responses
+ */
+export const ImageContentSchema = S.Struct({
+	type: S.Literal("image"),
+	data: S.String,
+	mimeType: S.String,
+});
+
+/**
+ * Union of all content block types
+ */
+export const ContentBlockSchema = S.Union(
+	TextContentSchema,
+	ImageContentSchema,
+);
+
+/**
+ * Full CreateMessage result schema (MCP spec compliant)
+ *
+ * According to MCP spec, sampling/createMessage response includes:
+ * - role: "assistant"
+ * - content: Array of content blocks (text or image)
+ * - model: Model identifier
+ * - stopReason: Why generation stopped
+ *
+ * Note: @effect/ai's CreateMessageResult is incomplete (missing role and content)
+ * This custom schema provides the full specification.
+ */
+export const CreateMessageResultSchema = S.Struct({
+	role: S.Literal("assistant"),
+	content: S.Array(ContentBlockSchema),
+	model: S.String,
+	stopReason: S.Literal("endTurn", "maxTokens", "stopSequence", "error"),
+});
+
+export type CreateMessageResult = S.Schema.Type<
+	typeof CreateMessageResultSchema
+>;
+
 /**
  * Council Member Opinion
  * Generated during start_council_debate phase
