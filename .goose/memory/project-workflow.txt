@@ -1,3 +1,54 @@
 # serena code-analysis lsp typescript
 Для перегляду TypeScript файлів використовувати serena MCP utilities замість shell commands. Це забезпечує кращий LSP-based аналіз коду.
 
+# typescript effect type-inference handlers
+## Project Rule: Type Inference for Effect Handlers
+
+**DO NOT specify explicit return types for Effect handler functions.**
+
+Let TypeScript infer the types automatically. This significantly reduces type errors and complexity.
+
+### ❌ WRONG:
+```typescript
+const conductVotingHandler = ({
+  debate_id,
+}: {
+  debate_id: string;
+}): Effect.Effect<
+  {
+    status: string;
+    debate_id: string;
+    total_votes: number;
+    vote_breakdown: ReadonlyArray<{ voter: string; voted_for: string }>;
+  },
+  Errors.InvalidStateError | Errors.ValidationError,
+  never
+> =>
+  Effect.gen(function* () {
+    // ...
+  });
+```
+
+### ✅ CORRECT:
+```typescript
+const conductVotingHandler = ({
+  debate_id,
+}: {
+  debate_id: string;
+}) =>
+  Effect.gen(function* () {
+    // ...
+  });
+```
+
+**Why:**
+- TypeScript is smart enough to infer correct types
+- Explicit type annotations cause more errors than they solve
+- Reduces complexity and maintenance burden
+- Effect.gen already provides strong type inference
+
+**Applies to:**
+- All Effect handler functions
+- Effect.gen functions
+- Effect.fn functions
+
