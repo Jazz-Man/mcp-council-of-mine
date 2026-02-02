@@ -117,7 +117,7 @@ const parseVotingResponse = (
 /**
  * Conduct Voting Handler Implementation
  */
-const conductVotingHandler = Tool.makeHandler(ConductVoting)(({ debate_id }) =>
+const conductVotingHandler = ({ debate_id }: { debate_id: string }) =>
 	Effect.gen(function* () {
 		// Step 1: Validate debate ID
 		const validatedId = yield* Security.validateDebateId(debate_id);
@@ -173,17 +173,40 @@ const conductVotingHandler = Tool.makeHandler(ConductVoting)(({ debate_id }) =>
 					});
 
 					// Extract text from response - safely handle content array
-					let responseText = "";
-					if (result.content.length > 0) {
-						const firstContent = result.content[0];
-						if (firstContent.type === "text") {
-							responseText = firstContent.text;
-						}
-					}
+					const text = yield* Effect.try({
+						try: () => {
+							const contentArray = result.content;
+
+							if (contentArray.length === 0) {
+								return "";
+							}
+
+							const firstBlock = contentArray[0];
+
+							// Check if it's a text block
+							if (
+								typeof firstBlock === "object" &&
+								firstBlock !== null &&
+								"type" in firstBlock &&
+								firstBlock.type === "text" &&
+								"text" in firstBlock
+							) {
+								return firstBlock.text;
+							}
+
+							return "";
+						},
+						catch: () =>
+							new Errors.ValidationError({
+								message: "Failed to extract vote text",
+								field: "vote_response",
+								validation_type: "invalid_response",
+							}),
+					});
 
 					// Parse voting response
 					const parsed = yield* Effect.try({
-						try: () => parseVotingResponse(responseText),
+						try: () => parseVotingResponse(text),
 						catch: () =>
 							new Errors.ValidationError({
 								message: "Failed to parse voting response",
@@ -234,8 +257,7 @@ const conductVotingHandler = Tool.makeHandler(ConductVoting)(({ debate_id }) =>
 				voted_for: v.voted_for_member,
 			})),
 		};
-	}),
-);
+	});
 
 /**
  * Layer for the voting tool handler
